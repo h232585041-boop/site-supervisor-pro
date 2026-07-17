@@ -4,7 +4,9 @@ streamlit==1.39.0
 streamlit-drawable-canvas==0.9.3
 fpdf2==2.8.1
 pandas>=2.0
-Pillow>=10.0
+# 鎖在 10.4.0：雲端在沒有版本限制時會裝到比本機測試新很多的版本，
+# 懷疑跟 streamlit-drawable-canvas 0.9.3 標註畫布空白的問題有關，先鎖回本機驗證過能正常標註的版本。
+Pillow==10.4.0
 numpy>=1.26,<2.0
 fonttools>=4.50
 
