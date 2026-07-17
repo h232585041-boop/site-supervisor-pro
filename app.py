@@ -456,6 +456,9 @@ class ReportPDF(FPDF):
         self.cell(0, 8, f"第 {self.page_no()} / {{nb}} 頁", align="C")
 
 
+PDF_PHOTO_MAX_H = 42  # 照片列最大高度（mm）；壓縮到這個高度才能讓一張 A4 直式頁面至少放下 3 筆紀錄
+
+
 def _pdf_photo_row(pdf: FPDF, file_ids: list[str], tmp_files: list[str]) -> None:
     """把一筆紀錄底下的所有照片，依張數自動算寬度橫向並排畫出來（無外框）。
     1 張：放大置中顯示（設上限避免撐破版面）；2 張以上：等寬平分整個可印刷寬度。"""
@@ -464,15 +467,14 @@ def _pdf_photo_row(pdf: FPDF, file_ids: list[str], tmp_files: list[str]) -> None
     avail_w = pdf.w - pdf.l_margin - pdf.r_margin
     gap = 4
     n = len(file_ids)
+    max_h = PDF_PHOTO_MAX_H
     if n == 1:
-        widths = [min(avail_w, 130)]
+        widths = [min(avail_w, 100)]
         xs = [pdf.l_margin + (avail_w - widths[0]) / 2]
-        max_h = 95
     else:
         w = (avail_w - gap * (n - 1)) / n
         widths = [w] * n
         xs = [pdf.l_margin + j * (w + gap) for j in range(n)]
-        max_h = 60
 
     y0 = pdf.get_y()
     row_h = 0
@@ -503,10 +505,8 @@ def _pdf_photo_row(pdf: FPDF, file_ids: list[str], tmp_files: list[str]) -> None
 
 
 def _pdf_block_height_estimate(file_ids: list[str], note: str) -> float:
-    n = len(file_ids)
-    photo_h = 95 if n <= 1 else 60
     note_lines = max(1, -(-len(note) // 46))
-    return 8 + 8 + note_lines * 5.5 + 6 + photo_h + 8
+    return 5 + 7 + 1.5 + note_lines * 5.5 + 3 + PDF_PHOTO_MAX_H + 6
 
 
 def export_pdf_bytes(site_name: str, df: pd.DataFrame) -> bytes:
@@ -588,7 +588,7 @@ def export_pdf_bytes(site_name: str, df: pd.DataFrame) -> bytes:
             pdf.ln(3)
 
             _pdf_photo_row(pdf, file_ids, tmp_files)
-            pdf.ln(8)
+            pdf.ln(6)
     finally:
         for f in tmp_files:
             try:
@@ -782,7 +782,10 @@ def inject_css() -> None:
         .site-row .site-meta { font-size: 0.8rem; color: #9a9a9a; }
 
         /* ---- 幽靈按鈕（切換案場）：深碳灰細邊框，hover 轉淡紫底 ---- */
-        .st-key-switch_site_btn { display: flex; justify-content: flex-end; }
+        .st-key-switch_site_btn {
+            display: flex; justify-content: flex-end; align-items: center;
+            margin-top: 0.3rem;
+        }
         .st-key-switch_site_btn button {
             width: auto; min-height: auto; white-space: nowrap;
             padding: 0.35rem 0.9rem; font-size: 0.82rem; font-weight: 500;
@@ -831,15 +834,17 @@ def _inject_datalist(label: str, key: str, history: list[str]) -> None:
     )
 
 
-def suggest_input(label: str, col_name: str, key: str, site_id: int) -> str:
+def suggest_input(label: str, col_name: str, key: str, site_id: int) -> tuple[str, list[str]]:
     """單一輸入框：直接打字，沒有的值打了就直接算新增，不用另外跳一格選擇。
-    打字時常用值會用瀏覽器原生下拉選單顯示（datalist）供點選。"""
+    打字時常用值會用瀏覽器原生下拉選單顯示（datalist）供點選。
+    datalist 的注入（_inject_datalist）刻意不在這裡呼叫——它用的
+    components.html 就算 height=0 仍會多佔一點版面高度，如果緊接在
+    每個欄位後面插入，會讓並排的兩欄多出的高度不對稱、造成欄位錯位，
+    所以改成把 history 回傳出去，由呼叫端等所有欄位都排完版後再統一注入。"""
     text_key = f"{key}_txt"
     value = st.text_input(label, key=text_key, placeholder="輸入或點下方常用值")
     history = distinct_values(col_name, site_id)
-    if history:
-        _inject_datalist(label, key, history)
-    return value.strip()
+    return value.strip(), history
 
 
 # ----------------------------------------------------------------------
@@ -908,10 +913,14 @@ def page_capture(site: dict) -> None:
     c1, c2 = st.columns(2)
     with c1:
         rec_date = st.date_input("日期", datetime.date.today())
-        trade = suggest_input("工種", "trade", "trade", site["id"])
+        trade, trade_history = suggest_input("工種", "trade", "trade", site["id"])
     with c2:
-        vendor = suggest_input("廠商", "vendor", "vendor", site["id"])
+        vendor, vendor_history = suggest_input("廠商", "vendor", "vendor", site["id"])
         status = st.selectbox("缺失狀態", STATUS_OPTIONS)
+    if trade_history:
+        _inject_datalist("工種", "trade", trade_history)
+    if vendor_history:
+        _inject_datalist("廠商", "vendor", vendor_history)
     note = st.text_area("備註", height=100, placeholder="例：3F 樑柱保護層不足，需補修")
 
     st.markdown("---")
