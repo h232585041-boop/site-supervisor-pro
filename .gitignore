@@ -1,0 +1,13 @@
+# Secrets — 絕對不要上傳
+.streamlit/secrets.toml
+*.json
+sa_base64.txt
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# macOS
+.DS_Store

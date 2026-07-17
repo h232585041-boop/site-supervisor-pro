@@ -1,0 +1,22 @@
+# 工地監工 Pro 相依套件
+# 注意：streamlit 需鎖在 1.40 以下，streamlit-drawable-canvas 0.9.3 與 1.41+ 不相容
+streamlit==1.39.0
+streamlit-drawable-canvas==0.9.3
+fpdf2==2.8.1
+pandas>=2.0
+Pillow>=10.0
+numpy>=1.26,<2.0
+fonttools>=4.50
+
+# 雲端後端：文字紀錄
+supabase>=2.9.0,<3.0
+
+# 雲端後端：照片存 Google Drive（用你自己帳號的 OAuth 授權，不是服務帳戶）
+# 直接用 requests 呼叫 Drive REST API，不用 google-api-python-client 預設的
+# httplib2 傳輸層（httplib2 在部分網路環境下 connect() 會卡死、不理會逾時設定）。
+google-auth>=2.30.0
+requests>=2.31.0
+
+# 僅 gdrive_oauth_setup.py（一次性本機授權工具）需要，部署到雲端的 app.py 不需要
+google-auth-oauthlib>=1.2.0
+google-api-python-client>=2.100.0

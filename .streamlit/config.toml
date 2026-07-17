@@ -1,0 +1,17 @@
+# 工地監工 Pro — 外觀設定
+# 品牌色票：主底色 #F4F4F4、深碳灰 #25262B、數位紫 #7E57C2、
+# 螢光萊姆綠 #C6FF00（強調用）、輔助淺灰 #E0E0E0
+
+[theme]
+base = "light"
+primaryColor = "#7E57C2"
+backgroundColor = "#F4F4F4"
+secondaryBackgroundColor = "#FAFAFA"
+textColor = "#25262B"
+font = "sans serif"
+
+[client]
+# Streamlit 右上角「⋮」選單（Rerun / Settings / About…）與 Deploy 按鈕
+# 是框架內建的英文字串，Streamlit 本身不提供多語系設定可以改成中文。
+# 這裡改用 minimal 模式盡量隱藏，不用瀏覽器就看得到那些英文字。
+toolbarMode = "minimal"
